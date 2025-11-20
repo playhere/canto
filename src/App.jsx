@@ -13,16 +13,36 @@ function App() {
     const [feedback, setFeedback] = useState('');
     const [audioBlob, setAudioBlob] = useState(null);
     const [autoPlay, setAutoPlay] = useState(true);
+    const [usageCounts, setUsageCounts] = useState({});
     const recognitionRef = useRef(null);
 
     useEffect(() => {
+        const savedCounts = localStorage.getItem('usageCounts');
+        if (savedCounts) {
+            setUsageCounts(JSON.parse(savedCounts));
+        }
         loadNewSentence();
     }, []);
+
+    const updateUsageCount = (id, type) => {
+        setUsageCounts(prev => {
+            const newCounts = {
+                ...prev,
+                [id]: {
+                    ...prev[id],
+                    [type]: (prev[id]?.[type] || 0) + 1
+                }
+            };
+            localStorage.setItem('usageCounts', JSON.stringify(newCounts));
+            return newCounts;
+        });
+    };
 
     useEffect(() => {
         if (autoPlay && currentSentence) {
             setIsPlaying(true);
             speak(currentSentence.text);
+            updateUsageCount(currentSentence.id, 'listened');
             const timeout = setTimeout(() => setIsPlaying(false), currentSentence.text.length * 300 + 1000);
             return () => clearTimeout(timeout);
         }
@@ -44,6 +64,7 @@ function App() {
         if (!currentSentence) return;
         setIsPlaying(true);
         speak(currentSentence.text);
+        updateUsageCount(currentSentence.id, 'listened');
         // Reset playing state after a rough estimate or use an event listener if possible
         // SpeechSynthesis doesn't easily give onend for all browsers reliably without wrapper, 
         // but let's assume a timeout for UI feedback or just toggle it back quickly.
@@ -82,6 +103,7 @@ function App() {
                 setFeedback(transcript);
                 const calculatedScore = calculateScore(currentSentence.text, transcript);
                 setScore(calculatedScore);
+                updateUsageCount(currentSentence.id, 'read');
             },
             () => {
                 setIsRecording(false);
@@ -118,6 +140,17 @@ function App() {
                     />
 
                     <ScoreBoard score={score} feedback={feedback} />
+
+                    {currentSentence && (
+                        <div className="mt-8 text-gray-500 text-sm flex gap-8">
+                            <div>
+                                <span className="font-semibold">Listened:</span> {usageCounts[currentSentence.id]?.listened || 0}
+                            </div>
+                            <div>
+                                <span className="font-semibold">Read:</span> {usageCounts[currentSentence.id]?.read || 0}
+                            </div>
+                        </div>
+                    )}
                 </main>
 
                 <footer className="mt-16 text-gray-400 text-sm">
