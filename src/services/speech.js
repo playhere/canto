@@ -1,6 +1,7 @@
-export const speak = (text) => {
+export const speak = (text, onEnd) => {
     if (!window.speechSynthesis) {
         console.error("Speech Synthesis not supported");
+        if (onEnd) onEnd();
         return;
     }
     // Cancel any ongoing speech
@@ -16,6 +17,15 @@ export const speak = (text) => {
     if (cantoVoice) {
         utterance.voice = cantoVoice;
     }
+
+    utterance.onend = () => {
+        if (onEnd) onEnd();
+    };
+
+    utterance.onerror = (e) => {
+        console.error("Speech synthesis error", e);
+        if (onEnd) onEnd();
+    };
 
     window.speechSynthesis.speak(utterance);
 };

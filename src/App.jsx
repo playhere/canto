@@ -13,6 +13,7 @@ function App() {
     const [feedback, setFeedback] = useState('');
     const [audioBlob, setAudioBlob] = useState(null);
     const [autoPlay, setAutoPlay] = useState(true);
+    const [autoPlayNext, setAutoPlayNext] = useState(false);
     const [usageCounts, setUsageCounts] = useState({});
     const recognitionRef = useRef(null);
 
@@ -38,13 +39,20 @@ function App() {
         });
     };
 
+    const handleSpeechEnd = () => {
+        setIsPlaying(false);
+        if (autoPlayNext) {
+            setTimeout(() => {
+                loadNewSentence();
+            }, 1000);
+        }
+    };
+
     useEffect(() => {
         if (autoPlay && currentSentence) {
             setIsPlaying(true);
-            speak(currentSentence.text);
+            speak(currentSentence.text, handleSpeechEnd);
             updateUsageCount(currentSentence.id, 'listened');
-            const timeout = setTimeout(() => setIsPlaying(false), currentSentence.text.length * 300 + 1000);
-            return () => clearTimeout(timeout);
         }
     }, [currentSentence]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -63,13 +71,8 @@ function App() {
     const handlePlay = () => {
         if (!currentSentence) return;
         setIsPlaying(true);
-        speak(currentSentence.text);
+        speak(currentSentence.text, () => setIsPlaying(false));
         updateUsageCount(currentSentence.id, 'listened');
-        // Reset playing state after a rough estimate or use an event listener if possible
-        // SpeechSynthesis doesn't easily give onend for all browsers reliably without wrapper, 
-        // but let's assume a timeout for UI feedback or just toggle it back quickly.
-        // Better: pass onEnd to speak if we modify it, but for now let's just set it to false after a timeout based on length.
-        setTimeout(() => setIsPlaying(false), currentSentence.text.length * 300 + 1000);
     };
 
     const handlePlayRecording = () => {
@@ -137,6 +140,8 @@ function App() {
                         hasRecording={!!audioBlob}
                         autoPlay={autoPlay}
                         onToggleAutoPlay={() => setAutoPlay(!autoPlay)}
+                        autoPlayNext={autoPlayNext}
+                        onToggleAutoPlayNext={() => setAutoPlayNext(!autoPlayNext)}
                     />
 
                     <ScoreBoard score={score} feedback={feedback} />
