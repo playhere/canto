@@ -70,12 +70,32 @@ export const listen = (onResult, onEnd, onAudioData) => {
             }
         });
 
+    recognition.onstart = () => {
+        console.log("Speech recognition started");
+        // alert("Debug: Recognition started"); // Uncomment if console is hard to access
+    };
+
+    recognition.onaudiostart = () => {
+        console.log("Audio capturing started");
+    };
+
+    recognition.onspeechstart = () => {
+        console.log("Speech detected");
+    };
+
+    recognition.onnomatch = (event) => {
+        console.log("No match found");
+        alert("No speech recognized. Please try speaking closer to the microphone.");
+    };
+
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
+        console.log("Result received:", transcript);
         onResult(transcript);
     };
 
     recognition.onend = () => {
+        console.log("Recognition ended");
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
         }
@@ -84,6 +104,7 @@ export const listen = (onResult, onEnd, onAudioData) => {
 
     recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
+        alert(`Speech recognition error: ${event.error}`);
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
         }
