@@ -33,7 +33,7 @@ export const speak = (text, onEnd) => {
 export const listen = (onResult, onEnd, onAudioData) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert("Speech Recognition not supported in this browser. Please use Chrome or Edge.");
+        alert("Speech Recognition is not supported on this device.\n\nNote: iOS (iPhone/iPad) does not support speech recognition in any browser. Please use an Android device or a desktop computer (Chrome/Edge).");
         return null;
     }
 
@@ -61,7 +61,14 @@ export const listen = (onResult, onEnd, onAudioData) => {
             };
             mediaRecorder.start();
         })
-        .catch(err => console.error("Error accessing microphone:", err));
+        .catch(err => {
+            console.error("Error accessing microphone:", err);
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                alert("Microphone access requires a secure connection (HTTPS). Please ensure you are accessing the site via HTTPS.");
+            } else {
+                alert("Could not access microphone. Please check permissions.");
+            }
+        });
 
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
